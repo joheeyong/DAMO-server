@@ -12,7 +12,7 @@ public class HealthController {
     @GetMapping("/health")
     public Map<String, Object> health() {
         return Map.of(
-                "status", "UP",
+                "status", "UP/DOWN",
                 "timestamp", LocalDateTime.now().toString()
         );
     }

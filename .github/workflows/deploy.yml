@@ -21,6 +21,21 @@ jobs:
       - name: Build JAR
         run: ./gradlew bootJar -x test
 
+      - name: Get runner IP
+        id: ip
+        run: echo "runner_ip=$(curl -s https://api.ipify.org)" >> $GITHUB_OUTPUT
+
+      - name: Open SSH port for runner
+        run: |
+          aws ec2 authorize-security-group-ingress \
+            --group-id ${{ secrets.EC2_SG_ID }} \
+            --protocol tcp --port 22 \
+            --cidr ${{ steps.ip.outputs.runner_ip }}/32 2>/dev/null || true
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-northeast-2
+
       - name: Deploy to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -43,3 +58,15 @@ jobs:
             nohup java -jar ~/demo-api-0.0.1-SNAPSHOT.jar > ~/app.log 2>&1 &
             sleep 5
             curl -s http://localhost:8080/health
+
+      - name: Revoke SSH port for runner
+        if: always()
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id ${{ secrets.EC2_SG_ID }} \
+            --protocol tcp --port 22 \
+            --cidr ${{ steps.ip.outputs.runner_ip }}/32 2>/dev/null || true
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-northeast-2

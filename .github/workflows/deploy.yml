@@ -37,10 +37,7 @@ jobs:
       - name: Restart server
         run: |
           ssh -i ~/.ssh/dadoc-key.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << 'SCRIPT'
-            pkill java || true
-            sleep 2
-            source ~/env.sh
-            nohup java -jar ~/demo-api-0.0.1-SNAPSHOT.jar > ~/app.log 2>&1 &
+            sudo systemctl restart damo
             sleep 10
             curl -sf http://localhost:8080/health || echo "Server starting..."
           SCRIPT

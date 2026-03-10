@@ -11,6 +11,48 @@ Spring Boot 기반 백엔드 API 서버
 - **CI/CD**: GitHub Actions
 - **IDE**: IntelliJ IDEA
 
+## 아키텍처 및 패턴
+
+- **Architecture**: Layered Architecture (Controller → Service → Repository)
+- **인증/인가**: Spring Security + JWT
+- **API 문서**: Swagger (SpringDoc OpenAPI)
+- **유효성 검증**: Bean Validation (`@Valid`)
+- **에러 처리**: Global Exception Handler (`@RestControllerAdvice`)
+- **데이터 전달**: DTO 패턴 (Request/Response 분리)
+- **환경 분리**: Spring Profile (dev / prod)
+- **보안**: Rate Limiting (Bucket4j), Security Headers
+
+## 프로젝트 구조
+
+```
+src/main/java/com/luxrobo/demoapi/
+├── DemoApiApplication.java          # 메인 애플리케이션
+├── config/                          # 설정
+│   ├── WebConfig.java               # CORS 설정
+│   ├── SecurityConfig.java          # Spring Security 설정
+│   ├── SwaggerConfig.java           # Swagger 설정
+│   ├── RateLimitFilter.java         # 요청 제한 필터
+│   └── SecurityHeaderFilter.java    # 보안 헤더 필터
+├── controller/                      # API 엔드포인트
+│   ├── HealthController.java
+│   └── UserController.java
+├── service/                         # 비즈니스 로직
+│   └── UserService.java
+├── repository/                      # DB 접근
+│   └── UserRepository.java
+├── entity/                          # DB 테이블 매핑
+│   └── User.java
+├── dto/                             # Request/Response 객체
+│   ├── request/
+│   └── response/
+├── exception/                       # 에러 처리
+│   ├── GlobalExceptionHandler.java
+│   └── CustomException.java
+└── security/                        # JWT, 인증/인가
+    ├── JwtProvider.java
+    └── JwtAuthenticationFilter.java
+```
+
 ## API 목록
 
 | Method | Endpoint | 설명 |
@@ -33,22 +75,6 @@ Content-Type: application/json
   "name": "홍길동",
   "email": "hong@test.com"
 }
-```
-
-## 프로젝트 구조
-
-```
-src/main/java/com/luxrobo/demoapi/
-├── DemoApiApplication.java          # 메인 애플리케이션
-├── config/
-│   └── WebConfig.java               # CORS 설정
-├── controller/
-│   ├── HealthController.java        # 헬스체크, 홈
-│   └── UserController.java          # 유저 CRUD
-├── entity/
-│   └── User.java                    # 유저 엔티티
-└── repository/
-    └── UserRepository.java          # 유저 레포지토리
 ```
 
 ## 로컬 실행
@@ -82,9 +108,12 @@ export DB_PASSWORD=<PASSWORD>
 
 ## 보안
 
-- DB 비밀번호: 환경변수로 관리 (코드에 미포함)
-- CORS: `damo-web.vercel.app`, `localhost:3000` 허용
-- EC2: systemd 서비스로 자동 재시작 설정
+- **Rate Limiting**: IP당 분당 100회, 시간당 1000회
+- **Security Headers**: XSS 방어, 클릭재킹 방어, MIME 스니핑 방지
+- **SQL Injection**: JPA 파라미터 바인딩으로 방어
+- **DB 비밀번호**: 환경변수로 관리 (코드에 미포함)
+- **CORS**: `damo-web.vercel.app`, `localhost:3000` 허용
+- **EC2**: systemd 서비스로 자동 재시작 설정
 
 ## 관련 레포지토리
 

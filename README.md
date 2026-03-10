@@ -9,6 +9,7 @@ Spring Boot 기반 백엔드 API 서버
 - **Database**: MySQL 8.0 (AWS RDS)
 - **Server**: AWS EC2 (t4g.micro)
 - **CI/CD**: GitHub Actions
+- **IDE**: IntelliJ IDEA
 
 ## API 목록
 
@@ -39,6 +40,8 @@ Content-Type: application/json
 ```
 src/main/java/com/luxrobo/demoapi/
 ├── DemoApiApplication.java          # 메인 애플리케이션
+├── config/
+│   └── WebConfig.java               # CORS 설정
 ├── controller/
 │   ├── HealthController.java        # 헬스체크, 홈
 │   └── UserController.java          # 유저 CRUD
@@ -65,13 +68,27 @@ export DB_PASSWORD=<PASSWORD>
 `main` 브랜치에 push하면 GitHub Actions를 통해 자동 배포됩니다.
 
 ```
-코드 push → 빌드 → EC2 업로드 → 서버 재시작
+코드 push → 빌드 → EC2 업로드 → systemd 재시작
 ```
 
 ## 인프라
 
 | 서비스 | 리소스 | 비고 |
 |--------|--------|------|
-| EC2 | t4g.micro | Elastic IP 할당 |
-| RDS | db.t4g.micro, MySQL 8.0 | 20GB |
+| EC2 | t4g.micro | Elastic IP: 54.180.179.231 |
+| RDS | db.t4g.micro, MySQL 8.0 | 20GB, 자동 백업 활성화 |
 | 리전 | ap-northeast-2 (서울) | - |
+| 모니터링 | CloudWatch | CPU/상태 체크 알림 → 이메일 |
+
+## 보안
+
+- DB 비밀번호: 환경변수로 관리 (코드에 미포함)
+- CORS: `damo-web.vercel.app`, `localhost:3000` 허용
+- EC2: systemd 서비스로 자동 재시작 설정
+
+## 관련 레포지토리
+
+| 서비스 | 레포 |
+|--------|------|
+| 앱 (Flutter) | [DAMO-flutter](https://github.com/joheeyong/DAMO-flutter) |
+| 웹 (React) | [DAMO-web](https://github.com/joheeyong/DAMO-web) |

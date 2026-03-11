@@ -1,6 +1,7 @@
 package com.luxrobo.demoapi.controller;
 
 import com.luxrobo.demoapi.service.NaverSearchService;
+import com.luxrobo.demoapi.service.RedditSearchService;
 import com.luxrobo.demoapi.service.YouTubeSearchService;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,10 +15,12 @@ public class SearchController {
 
     private final NaverSearchService naverSearchService;
     private final YouTubeSearchService youTubeSearchService;
+    private final RedditSearchService redditSearchService;
 
-    public SearchController(NaverSearchService naverSearchService, YouTubeSearchService youTubeSearchService) {
+    public SearchController(NaverSearchService naverSearchService, YouTubeSearchService youTubeSearchService, RedditSearchService redditSearchService) {
         this.naverSearchService = naverSearchService;
         this.youTubeSearchService = youTubeSearchService;
+        this.redditSearchService = redditSearchService;
     }
 
     @GetMapping("/{category}")
@@ -30,6 +33,9 @@ public class SearchController {
     ) throws Exception {
         if ("youtube".equals(category)) {
             return youTubeSearchService.search(query, display);
+        }
+        if ("reddit".equals(category)) {
+            return redditSearchService.search(query, display);
         }
         return naverSearchService.search(category, query, display, start, sort);
     }
@@ -56,6 +62,13 @@ public class SearchController {
             results.put("youtube", youTubeSearchService.search(query, display));
         } catch (Exception e) {
             results.put("youtube", "{\"error\":\"" + e.getMessage() + "\"}");
+        }
+
+        // Reddit results
+        try {
+            results.put("reddit", redditSearchService.search(query, display));
+        } catch (Exception e) {
+            results.put("reddit", "{\"error\":\"" + e.getMessage() + "\"}");
         }
 
         return results;
@@ -104,11 +117,21 @@ public class SearchController {
             }
         });
 
+        // Reddit trending
+        CompletableFuture<String> redditTrending = CompletableFuture.supplyAsync(() -> {
+            try {
+                return redditSearchService.trending(display);
+            } catch (Exception e) {
+                return "{\"data\":{\"children\":[]}}";
+            }
+        });
+
         try {
             results.put("youtube", ytTrending.get());
             results.put("news", naverNews.get());
             results.put("blog", naverBlog.get());
             results.put("shop", naverShop.get());
+            results.put("reddit", redditTrending.get());
             results.put("keyword", keyword);
         } catch (Exception e) {
             results.put("error", e.getMessage());

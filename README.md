@@ -43,6 +43,7 @@ src/main/java/com/luxrobo/demoapi/
 │   ├── UserService.java
 │   ├── FcmService.java
 │   ├── NaverSearchService.java
+│   ├── RedditSearchService.java
 │   └── YouTubeSearchService.java
 ├── repository/                      # DB 접근
 │   ├── UserRepository.java
@@ -74,9 +75,9 @@ src/main/java/com/luxrobo/demoapi/
 | `POST` | `/api/fcm/register` | FCM 디바이스 토큰 등록 |
 | `GET` | `/api/fcm/tokens` | 등록된 디바이스 목록 |
 | `POST` | `/api/fcm/send` | 푸시 알림 전송 |
-| `GET` | `/api/search/{category}` | 카테고리별 검색 (blog/news/cafe/shop/image/kin/book/webkr/youtube) |
-| `GET` | `/api/search/all` | 네이버+유튜브 전체 통합 검색 |
-| `GET` | `/api/search/trending` | 추천/트렌딩 피드 (유튜브 인기 + 네이버 뉴스/블로그/쇼핑) |
+| `GET` | `/api/search/{category}` | 카테고리별 검색 (blog/news/cafe/shop/image/kin/book/webkr/youtube/reddit) |
+| `GET` | `/api/search/all` | 네이버+유튜브+Reddit 전체 통합 검색 |
+| `GET` | `/api/search/trending` | 추천/트렌딩 피드 (유튜브 인기 + 네이버 뉴스/블로그/쇼핑 + Reddit 인기글) |
 
 ### 요청 예시
 

@@ -29,19 +29,24 @@ src/main/java/com/luxrobo/demoapi/
 ├── DemoApiApplication.java          # 메인 애플리케이션
 ├── config/                          # 설정
 │   ├── WebConfig.java               # CORS 설정
-│   ├── SecurityConfig.java          # Spring Security 설정
-│   ├── SwaggerConfig.java           # Swagger 설정
+│   ├── FirebaseConfig.java          # Firebase Admin SDK 초기화
+│   ├── SecurityConfig.java          # Spring Security 설정 (예정)
+│   ├── SwaggerConfig.java           # Swagger 설정 (예정)
 │   ├── RateLimitFilter.java         # 요청 제한 필터
 │   └── SecurityHeaderFilter.java    # 보안 헤더 필터
 ├── controller/                      # API 엔드포인트
 │   ├── HealthController.java
-│   └── UserController.java
+│   ├── UserController.java
+│   └── FcmController.java
 ├── service/                         # 비즈니스 로직
-│   └── UserService.java
+│   ├── UserService.java
+│   └── FcmService.java
 ├── repository/                      # DB 접근
-│   └── UserRepository.java
+│   ├── UserRepository.java
+│   └── DeviceTokenRepository.java
 ├── entity/                          # DB 테이블 매핑
-│   └── User.java
+│   ├── User.java
+│   └── DeviceToken.java
 ├── dto/                             # Request/Response 객체
 │   ├── request/
 │   └── response/
@@ -63,6 +68,9 @@ src/main/java/com/luxrobo/demoapi/
 | `GET` | `/api/users` | 전체 유저 조회 |
 | `GET` | `/api/users/{id}` | 특정 유저 조회 |
 | `DELETE` | `/api/users/{id}` | 유저 삭제 |
+| `POST` | `/api/fcm/register` | FCM 디바이스 토큰 등록 |
+| `GET` | `/api/fcm/tokens` | 등록된 디바이스 목록 |
+| `POST` | `/api/fcm/send` | 푸시 알림 전송 |
 
 ### 요청 예시
 

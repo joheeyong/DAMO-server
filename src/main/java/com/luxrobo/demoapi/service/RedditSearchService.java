@@ -13,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 public class RedditSearchService {
 
     private static final String BASE_URL = "https://www.reddit.com";
-    private static final String USER_AGENT = "DAMO/1.0";
+    private static final String USER_AGENT = "web:com.damo.app:v1.0.0 (by /u/damo_search)";
 
     public String search(String query, int limit) throws Exception {
         String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
@@ -50,15 +50,15 @@ public class RedditSearchService {
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setRequestProperty("User-Agent", USER_AGENT);
+        conn.setRequestProperty("Accept", "application/json");
 
         int responseCode = conn.getResponseCode();
-        BufferedReader br;
-        if (responseCode == 200) {
-            br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
-        } else {
-            br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
+        if (responseCode != 200) {
+            conn.disconnect();
+            return "{\"data\":{\"children\":[]}}";
         }
 
+        BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
         StringBuilder sb = new StringBuilder();
         String line;
         while ((line = br.readLine()) != null) {
@@ -67,6 +67,10 @@ public class RedditSearchService {
         br.close();
         conn.disconnect();
 
-        return sb.toString();
+        String result = sb.toString();
+        if (!result.startsWith("{")) {
+            return "{\"data\":{\"children\":[]}}";
+        }
+        return result;
     }
 }

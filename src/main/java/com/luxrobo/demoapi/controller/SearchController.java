@@ -1,5 +1,6 @@
 package com.luxrobo.demoapi.controller;
 
+import com.luxrobo.demoapi.service.InstagramSearchService;
 import com.luxrobo.demoapi.service.NaverSearchService;
 import com.luxrobo.demoapi.service.RedditSearchService;
 import com.luxrobo.demoapi.service.YouTubeSearchService;
@@ -16,11 +17,13 @@ public class SearchController {
     private final NaverSearchService naverSearchService;
     private final YouTubeSearchService youTubeSearchService;
     private final RedditSearchService redditSearchService;
+    private final InstagramSearchService instagramSearchService;
 
-    public SearchController(NaverSearchService naverSearchService, YouTubeSearchService youTubeSearchService, RedditSearchService redditSearchService) {
+    public SearchController(NaverSearchService naverSearchService, YouTubeSearchService youTubeSearchService, RedditSearchService redditSearchService, InstagramSearchService instagramSearchService) {
         this.naverSearchService = naverSearchService;
         this.youTubeSearchService = youTubeSearchService;
         this.redditSearchService = redditSearchService;
+        this.instagramSearchService = instagramSearchService;
     }
 
     @GetMapping("/{category}")
@@ -39,6 +42,9 @@ public class SearchController {
         }
         if ("reddit".equals(category)) {
             return redditSearchService.search(query, display);
+        }
+        if ("instagram".equals(category)) {
+            return instagramSearchService.searchByHashtag(query, display);
         }
         return naverSearchService.search(category, query, display, start, sort);
     }
@@ -79,6 +85,13 @@ public class SearchController {
             results.put("reddit", redditSearchService.search(query, display));
         } catch (Exception e) {
             results.put("reddit", "{\"error\":\"" + e.getMessage() + "\"}");
+        }
+
+        // Instagram results
+        try {
+            results.put("instagram", instagramSearchService.searchByHashtag(query, display));
+        } catch (Exception e) {
+            results.put("instagram", "{\"data\":[]}");
         }
 
         return results;
@@ -145,6 +158,15 @@ public class SearchController {
             }
         });
 
+        // Instagram trending
+        CompletableFuture<String> instaTrending = CompletableFuture.supplyAsync(() -> {
+            try {
+                return instagramSearchService.searchByHashtag(keyword, display);
+            } catch (Exception e) {
+                return "{\"data\":[]}";
+            }
+        });
+
         try {
             results.put("youtube", ytTrending.get());
             results.put("news", naverNews.get());
@@ -152,6 +174,7 @@ public class SearchController {
             results.put("shop", naverShop.get());
             results.put("shorts", ytShorts.get());
             results.put("reddit", redditTrending.get());
+            results.put("instagram", instaTrending.get());
             results.put("keyword", keyword);
         } catch (Exception e) {
             results.put("error", e.getMessage());

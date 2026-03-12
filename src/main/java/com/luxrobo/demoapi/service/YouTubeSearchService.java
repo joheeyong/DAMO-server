@@ -32,6 +32,38 @@ public class YouTubeSearchService {
         return fetchUrl(urlStr);
     }
 
+    public String searchShorts(String query, int maxResults) throws Exception {
+        String encodedQuery = URLEncoder.encode(query + " #shorts", StandardCharsets.UTF_8);
+        String urlStr = BASE_URL + "/search"
+                + "?part=snippet"
+                + "&q=" + encodedQuery
+                + "&maxResults=" + maxResults
+                + "&type=video"
+                + "&videoDuration=short"
+                + "&regionCode=KR"
+                + "&relevanceLanguage=ko"
+                + "&key=" + apiKey;
+
+        return fetchUrl(urlStr);
+    }
+
+    public String trendingShorts(int maxResults) throws Exception {
+        String encodedQuery = URLEncoder.encode("#shorts", StandardCharsets.UTF_8);
+        String urlStr = BASE_URL + "/search"
+                + "?part=snippet"
+                + "&q=" + encodedQuery
+                + "&maxResults=" + maxResults
+                + "&type=video"
+                + "&videoDuration=short"
+                + "&regionCode=KR"
+                + "&relevanceLanguage=ko"
+                + "&order=viewCount"
+                + "&publishedAfter=" + java.time.Instant.now().minus(java.time.Duration.ofDays(7)).toString()
+                + "&key=" + apiKey;
+
+        return fetchUrl(urlStr);
+    }
+
     public String trending(int maxResults) throws Exception {
         String urlStr = BASE_URL + "/videos"
                 + "?part=snippet,statistics"

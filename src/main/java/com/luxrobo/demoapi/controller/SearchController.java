@@ -64,6 +64,13 @@ public class SearchController {
             results.put("youtube", "{\"error\":\"" + e.getMessage() + "\"}");
         }
 
+        // YouTube Shorts
+        try {
+            results.put("shorts", youTubeSearchService.searchShorts(query, display));
+        } catch (Exception e) {
+            results.put("shorts", "{\"error\":\"" + e.getMessage() + "\"}");
+        }
+
         // Reddit results
         try {
             results.put("reddit", redditSearchService.search(query, display));
@@ -117,6 +124,15 @@ public class SearchController {
             }
         });
 
+        // YouTube Shorts trending
+        CompletableFuture<String> ytShorts = CompletableFuture.supplyAsync(() -> {
+            try {
+                return youTubeSearchService.trendingShorts(display);
+            } catch (Exception e) {
+                return "{\"items\":[]}";
+            }
+        });
+
         // Reddit trending
         CompletableFuture<String> redditTrending = CompletableFuture.supplyAsync(() -> {
             try {
@@ -131,6 +147,7 @@ public class SearchController {
             results.put("news", naverNews.get());
             results.put("blog", naverBlog.get());
             results.put("shop", naverShop.get());
+            results.put("shorts", ytShorts.get());
             results.put("reddit", redditTrending.get());
             results.put("keyword", keyword);
         } catch (Exception e) {

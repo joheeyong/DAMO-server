@@ -34,6 +34,9 @@ public class SearchController {
         if ("youtube".equals(category)) {
             return youTubeSearchService.search(query, display);
         }
+        if ("shorts".equals(category)) {
+            return youTubeSearchService.searchShorts(query, display);
+        }
         if ("reddit".equals(category)) {
             return redditSearchService.search(query, display);
         }

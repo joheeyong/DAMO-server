@@ -27,6 +27,14 @@ public class AuthController {
         return oAuthService.loginWithGoogle(code, redirectUri);
     }
 
+    @PostMapping("/naver")
+    public Map<String, Object> naverLogin(@RequestBody Map<String, String> body) {
+        String code = body.get("code");
+        String state = body.get("state");
+        String redirectUri = body.get("redirectUri");
+        return oAuthService.loginWithNaver(code, state, redirectUri);
+    }
+
     @GetMapping("/me")
     public Map<String, Object> me(Authentication authentication) {
         if (authentication == null || authentication.getPrincipal() == null) {

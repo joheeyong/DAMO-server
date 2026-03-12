@@ -111,6 +111,48 @@ firebase appdistribution:distribute \
 | Firebase | Spark (무료) | FCM, Analytics |
 | 도메인 | damo-web.vercel.app | Vercel 기본 |
 
+## DB 백업 정책
+
+### 자동 백업 (RDS)
+- **보존기간**: 1일 (프리티어 최대)
+- **백업 시간**: 18:00~19:00 UTC (KST 새벽 3~4시)
+- **방식**: RDS 자동 스냅샷 (매일)
+
+### 수동 스냅샷
+자동 백업 보존기간이 짧으므로, 주요 변경 전후 수동 스냅샷을 생성합니다.
+
+```bash
+# 수동 스냅샷 생성 (삭제 전까지 영구 보관)
+aws rds create-db-snapshot \
+  --db-instance-identifier dadoc-db \
+  --db-snapshot-identifier dadoc-db-manual-$(date +%Y%m%d)
+
+# 스냅샷 목록 확인
+aws rds describe-db-snapshots \
+  --db-instance-identifier dadoc-db \
+  --query 'DBSnapshots[*].{ID:DBSnapshotIdentifier,Status:Status,Created:SnapshotCreateTime}' \
+  --output table
+
+# 스냅샷에서 복원 (새 인스턴스로 생성됨)
+aws rds restore-db-instance-from-db-snapshot \
+  --db-instance-identifier dadoc-db-restored \
+  --db-snapshot-identifier dadoc-db-manual-20260312
+```
+
+### 보안 설정
+
+| 항목 | 상태 |
+|------|------|
+| 삭제 방지 | ON |
+| 자동 마이너 버전 업그레이드 | ON |
+| 스토리지 암호화 | OFF (프리티어 기존 인스턴스 변경 불가) |
+| Multi-AZ | OFF (프리티어) |
+
+### 백업 시점 권장
+- 스키마 변경 (ALTER TABLE) 전
+- 대량 데이터 수정/삭제 전
+- 배포 전
+
 ## SSH 접속
 
 ```bash

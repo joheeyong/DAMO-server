@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Service
@@ -67,19 +68,7 @@ public class OAuthService {
         // 3. Upsert user
         User user = upsertUser("google", providerId, name, email, picture);
 
-        // 4. Generate JWT
-        String token = jwtProvider.generateToken(user.getId());
-
-        return Map.of(
-                "token", token,
-                "user", Map.of(
-                        "id", user.getId(),
-                        "name", user.getName() != null ? user.getName() : "",
-                        "email", user.getEmail() != null ? user.getEmail() : "",
-                        "profileImage", user.getProfileImage() != null ? user.getProfileImage() : "",
-                        "provider", user.getProvider()
-                )
-        );
+        return buildLoginResponse(user);
     }
 
     public Map<String, Object> loginWithNaver(String code, String state, String redirectUri) {
@@ -114,19 +103,20 @@ public class OAuthService {
         // 3. Upsert user
         User user = upsertUser("naver", providerId, name, email, picture);
 
-        // 4. Generate JWT
-        String token = jwtProvider.generateToken(user.getId());
+        return buildLoginResponse(user);
+    }
 
-        return Map.of(
-                "token", token,
-                "user", Map.of(
-                        "id", user.getId(),
-                        "name", user.getName() != null ? user.getName() : "",
-                        "email", user.getEmail() != null ? user.getEmail() : "",
-                        "profileImage", user.getProfileImage() != null ? user.getProfileImage() : "",
-                        "provider", user.getProvider()
-                )
-        );
+    private Map<String, Object> buildLoginResponse(User user) {
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("id", user.getId());
+        userMap.put("name", user.getName() != null ? user.getName() : "");
+        userMap.put("email", user.getEmail() != null ? user.getEmail() : "");
+        userMap.put("profileImage", user.getProfileImage() != null ? user.getProfileImage() : "");
+        userMap.put("provider", user.getProvider());
+        userMap.put("interests", user.getInterests() != null ? user.getInterests() : "");
+
+        String token = jwtProvider.generateToken(user.getId());
+        return Map.of("token", token, "user", userMap);
     }
 
     private User upsertUser(String provider, String providerId, String name, String email, String profileImage) {

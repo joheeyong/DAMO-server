@@ -1,138 +1,162 @@
 # DAMO Server
 
-Spring Boot 기반 백엔드 API 서버
+**다모(DAMO)** - 통합 콘텐츠 검색 플랫폼 백엔드 API 서버
 
 ## 기술 스택
 
-- **Framework**: Spring Boot 3.2.5
-- **Language**: Java 17
-- **Database**: MySQL 8.0 (AWS RDS)
-- **Server**: AWS EC2 (t4g.micro)
-- **CI/CD**: GitHub Actions
-- **IDE**: IntelliJ IDEA
-
-## 아키텍처 및 패턴
-
-- **Architecture**: Layered Architecture (Controller → Service → Repository)
-- **인증/인가**: Spring Security + JWT
-- **API 문서**: Swagger (SpringDoc OpenAPI)
-- **유효성 검증**: Bean Validation (`@Valid`)
-- **에러 처리**: Global Exception Handler (`@RestControllerAdvice`)
-- **데이터 전달**: DTO 패턴 (Request/Response 분리)
-- **환경 분리**: Spring Profile (dev / prod)
-- **보안**: Rate Limiting (Bucket4j), Security Headers
+| 분류 | 기술 |
+|------|------|
+| Framework | Spring Boot 3.2.5 |
+| Language | Java 17 |
+| Database | MySQL 8.0 (AWS RDS) |
+| Auth | Spring Security + JWT (JJWT 0.12.5) |
+| OAuth | Google, Naver (Authorization Code Flow) |
+| HTTP Client | Spring WebFlux WebClient |
+| Push | Firebase Admin SDK (FCM) |
+| Server | AWS EC2 (t4g.micro) |
+| CI/CD | GitHub Actions |
 
 ## 프로젝트 구조
 
 ```
 src/main/java/com/luxrobo/demoapi/
-├── DemoApiApplication.java          # 메인 애플리케이션
-├── config/                          # 설정
-│   ├── WebConfig.java               # CORS 설정
-│   ├── FirebaseConfig.java          # Firebase Admin SDK 초기화
-│   ├── SecurityConfig.java          # Spring Security 설정 (예정)
-│   ├── SwaggerConfig.java           # Swagger 설정 (예정)
-│   ├── RateLimitFilter.java         # 요청 제한 필터
-│   └── SecurityHeaderFilter.java    # 보안 헤더 필터
-├── controller/                      # API 엔드포인트
-│   ├── HealthController.java
-│   ├── UserController.java
-│   ├── FcmController.java
-│   └── SearchController.java
-├── service/                         # 비즈니스 로직
+├── DemoApiApplication.java
+├── config/
+│   ├── SecurityConfig.java          # Spring Security + CORS + JWT 필터
+│   ├── WebConfig.java               # 웹 설정
+│   ├── FirebaseConfig.java          # Firebase Admin SDK
+│   ├── RateLimitFilter.java         # IP 기반 요청 제한
+│   └── SecurityHeaderFilter.java    # 보안 헤더
+├── controller/
+│   ├── HealthController.java        # 헬스 체크
+│   ├── AuthController.java          # OAuth 로그인 + 사용자 정보
+│   ├── UserController.java          # 사용자 CRUD
+│   ├── FcmController.java           # 푸시 알림
+│   └── SearchController.java        # 통합 검색
+├── service/
+│   ├── OAuthService.java            # Google/Naver OAuth 토큰 교환
+│   ├── NaverSearchService.java      # 네이버 검색 API
+│   ├── YouTubeSearchService.java    # YouTube Data API v3
+│   ├── RedditSearchService.java     # Reddit 공개 JSON API
 │   ├── UserService.java
-│   ├── FcmService.java
-│   ├── NaverSearchService.java
-│   ├── RedditSearchService.java
-│   └── YouTubeSearchService.java
-├── repository/                      # DB 접근
-│   ├── UserRepository.java
-│   └── DeviceTokenRepository.java
-├── entity/                          # DB 테이블 매핑
-│   ├── User.java
-│   └── DeviceToken.java
-├── dto/                             # Request/Response 객체
-│   ├── request/
-│   └── response/
-├── exception/                       # 에러 처리
-│   ├── GlobalExceptionHandler.java
-│   └── CustomException.java
-└── security/                        # JWT, 인증/인가
-    ├── JwtProvider.java
-    └── JwtAuthenticationFilter.java
+│   └── FcmService.java
+├── security/
+│   ├── JwtProvider.java             # JWT 생성/검증
+│   └── JwtAuthenticationFilter.java # Bearer 토큰 필터
+├── entity/
+│   ├── User.java                    # 사용자 (OAuth 연동)
+│   └── DeviceToken.java             # FCM 디바이스 토큰
+└── repository/
+    ├── UserRepository.java
+    └── DeviceTokenRepository.java
 ```
 
-## API 목록
+## API 엔드포인트
+
+### 인증 (Auth)
+
+| Method | Endpoint | 설명 | 인증 |
+|--------|----------|------|------|
+| `POST` | `/api/auth/google` | Google OAuth 로그인 | - |
+| `POST` | `/api/auth/naver` | Naver OAuth 로그인 | - |
+| `GET` | `/api/auth/me` | 내 정보 조회 | Bearer |
+| `PUT` | `/api/auth/interests` | 관심사 설정 | Bearer |
+
+### 검색 (Search)
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| `GET` | `/` | Welcome 메시지 |
-| `GET` | `/health` | 서버 상태 확인 |
-| `POST` | `/api/users` | 유저 생성 |
-| `GET` | `/api/users` | 전체 유저 조회 |
-| `GET` | `/api/users/{id}` | 특정 유저 조회 |
-| `DELETE` | `/api/users/{id}` | 유저 삭제 |
+| `GET` | `/api/search/all?query={q}&display={n}` | 통합 검색 (네이버+유튜브+Shorts+Reddit) |
+| `GET` | `/api/search/trending?display={n}` | 추천/트렌딩 피드 |
+| `GET` | `/api/search/{category}?query={q}` | 카테고리별 검색 |
+
+> 카테고리: `blog`, `news`, `cafe`, `shop`, `image`, `kin`, `book`, `webkr`, `youtube`, `shorts`, `reddit`
+
+### 사용자 / 푸시
+
+| Method | Endpoint | 설명 |
+|--------|----------|------|
 | `POST` | `/api/fcm/register` | FCM 디바이스 토큰 등록 |
-| `GET` | `/api/fcm/tokens` | 등록된 디바이스 목록 |
 | `POST` | `/api/fcm/send` | 푸시 알림 전송 |
-| `GET` | `/api/search/{category}` | 카테고리별 검색 (blog/news/cafe/shop/image/kin/book/webkr/youtube/reddit) |
-| `GET` | `/api/search/all` | 네이버+유튜브+Reddit 전체 통합 검색 |
-| `GET` | `/api/search/trending` | 추천/트렌딩 피드 (유튜브 인기 + 네이버 뉴스/블로그/쇼핑 + Reddit 인기글) |
+| `GET` | `/health` | 서버 상태 확인 |
 
-### 요청 예시
+## 인증 플로우
 
-**유저 생성**
 ```
-POST /api/users
-Content-Type: application/json
-
-{
-  "name": "홍길동",
-  "email": "hong@test.com"
-}
+[클라이언트]                    [백엔드]                     [Google/Naver]
+    │                            │                              │
+    │── OAuth 로그인 요청 ──────>│                              │
+    │                            │── Authorization Code ──────>│
+    │                            │<── Access Token ────────────│
+    │                            │── 사용자 정보 요청 ────────>│
+    │                            │<── 이름/이메일/사진 ────────│
+    │                            │                              │
+    │                            │ DB Upsert + JWT 생성         │
+    │<── { token, user } ────────│                              │
+    │                            │                              │
+    │── Bearer JWT ────────────>│ (이후 모든 인증 요청)         │
 ```
+
+## 환경변수
+
+| 변수 | 설명 |
+|------|------|
+| `DB_URL` | MySQL 접속 URL |
+| `DB_USERNAME` | DB 사용자명 |
+| `DB_PASSWORD` | DB 비밀번호 |
+| `NAVER_SEARCH_CLIENT_ID` | 네이버 검색 API Client ID |
+| `NAVER_SEARCH_CLIENT_SECRET` | 네이버 검색 API Client Secret |
+| `YOUTUBE_API_KEY` | YouTube Data API Key |
+| `GOOGLE_CLIENT_ID` | Google OAuth Client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret |
+| `NAVER_LOGIN_CLIENT_ID` | 네이버 로그인 Client ID |
+| `NAVER_LOGIN_CLIENT_SECRET` | 네이버 로그인 Client Secret |
+| `JWT_SECRET` | JWT 서명 키 (256bit+) |
+| `FIREBASE_CREDENTIALS` | Firebase 서비스 계정 JSON 경로 |
 
 ## 로컬 실행
 
 ```bash
-# 환경변수 설정
-export DB_URL=jdbc:mysql://<DB_HOST>:3306/dadoc
-export DB_USERNAME=admin
-export DB_PASSWORD=<PASSWORD>
+export DB_URL=jdbc:mysql://localhost:3306/dadoc
+export DB_USERNAME=root
+export DB_PASSWORD=password
+# ... 기타 환경변수
 
-# 실행
 ./gradlew bootRun
 ```
 
 ## 배포
 
-`main` 브랜치에 push하면 GitHub Actions를 통해 자동 배포됩니다.
+```bash
+# 빌드
+./gradlew build -x test
 
-```
-코드 push → 빌드 → EC2 업로드 → systemd 재시작
+# EC2 배포
+scp -i ~/.ssh/dadoc-key.pem build/libs/demo-api-0.0.1-SNAPSHOT.jar ec2-user@54.180.179.231:/home/ec2-user/
+
+# 재시작
+ssh -i ~/.ssh/dadoc-key.pem ec2-user@54.180.179.231 'pkill -f demo-api; nohup bash /home/ec2-user/start-app.sh > /tmp/app.log 2>&1 &'
 ```
 
 ## 인프라
 
-| 서비스 | 리소스 | 비고 |
-|--------|--------|------|
-| EC2 | t4g.micro | Elastic IP: 54.180.179.231 |
-| RDS | db.t4g.micro, MySQL 8.0 | 20GB, 자동 백업 활성화 |
-| 리전 | ap-northeast-2 (서울) | - |
-| 모니터링 | CloudWatch | CPU/상태 체크 알림 → 이메일 |
+| 서비스 | 스펙 | 비고 |
+|--------|------|------|
+| EC2 | t4g.micro | IP: 54.180.179.231 |
+| RDS | db.t4g.micro, MySQL 8.0 | 20GB, 자동 백업 |
+| 리전 | ap-northeast-2 (서울) | |
 
 ## 보안
 
-- **Rate Limiting**: IP당 분당 100회, 시간당 1000회
-- **Security Headers**: XSS 방어, 클릭재킹 방어, MIME 스니핑 방지
-- **SQL Injection**: JPA 파라미터 바인딩으로 방어
-- **DB 비밀번호**: 환경변수로 관리 (코드에 미포함)
-- **CORS**: `damo-web.vercel.app`, `localhost:3000` 허용
-- **EC2**: systemd 서비스로 자동 재시작 설정
+- **JWT**: Stateless 세션, 24시간 유효기간
+- **CORS**: `damo-web.vercel.app`, `localhost:3000`
+- **Rate Limit**: IP당 분당 100회
+- **Security Headers**: XSS, 클릭재킹, MIME 스니핑 방지
+- **민감정보**: 환경변수 관리
 
 ## 관련 레포지토리
 
 | 서비스 | 레포 |
 |--------|------|
-| 앱 (Flutter) | [DAMO-flutter](https://github.com/joheeyong/DAMO-flutter) |
 | 웹 (React) | [DAMO-web](https://github.com/joheeyong/DAMO-web) |
+| 앱 (Flutter) | [DAMO-flutter](https://github.com/joheeyong/DAMO-flutter) |

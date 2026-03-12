@@ -46,6 +46,7 @@ curl http://localhost:8080/health
 ├── start-app.sh                    # 시작 스크립트 (env 로딩 + java -jar)
 ├── env.sh                          # 환경변수 모음
 ├── firebase-credentials.json       # Firebase 서비스 계정
+├── web/                            # React 빌드 정적 파일
 └── app.log                         # 애플리케이션 로그
 ```
 
@@ -64,6 +65,9 @@ export GOOGLE_CLIENT_SECRET=***
 export NAVER_LOGIN_CLIENT_ID=***
 export NAVER_LOGIN_CLIENT_SECRET=***
 export JWT_SECRET=***
+export KAKAO_REST_API_KEY=***
+export INSTAGRAM_ACCESS_TOKEN=***       # 미설정 시 빈 결과 반환
+export INSTAGRAM_USER_ID=***            # 미설정 시 빈 결과 반환
 ```
 
 ## Web 배포
@@ -108,8 +112,9 @@ firebase appdistribution:distribute \
 | EC2 | t4g.micro, Amazon Linux | IP: 54.180.179.231 |
 | RDS | db.t4g.micro, MySQL 8.0, 20GB | 자동 백업, 서울 리전 |
 | Vercel | Hobby Plan | 자동 HTTPS |
-| Firebase | Spark (무료) | FCM, Analytics |
+| Firebase | Spark (무료) | FCM, Analytics, App Distribution |
 | 도메인 | damo-web.vercel.app | Vercel 기본 |
+| GCP | directed-post-279808 | YouTube API 키 관리 |
 
 ## DB 백업 정책
 
@@ -152,6 +157,16 @@ aws rds restore-db-instance-from-db-snapshot \
 - 스키마 변경 (ALTER TABLE) 전
 - 대량 데이터 수정/삭제 전
 - 배포 전
+
+## API 할당량
+
+| API | 일일 한도 | 비고 |
+|-----|----------|------|
+| YouTube Data API v3 | 10,000 units (증가 요청 중: 50,000) | 검색 1회 = 100 units |
+| Naver Search API | 25,000 건/일 | 카테고리별 별도 |
+| Kakao Daum Search API | 300,000 건/일 | 무료 |
+| Reddit JSON API | 제한 없음 (User-Agent 필수) | 공개 API |
+| Instagram Graph API | 200 calls/hour | 비즈니스 계정 필요 |
 
 ## SSH 접속
 

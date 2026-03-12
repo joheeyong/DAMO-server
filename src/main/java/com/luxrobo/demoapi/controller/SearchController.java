@@ -1,6 +1,7 @@
 package com.luxrobo.demoapi.controller;
 
 import com.luxrobo.demoapi.service.InstagramSearchService;
+import com.luxrobo.demoapi.service.KakaoSearchService;
 import com.luxrobo.demoapi.service.NaverSearchService;
 import com.luxrobo.demoapi.service.RedditSearchService;
 import com.luxrobo.demoapi.service.YouTubeSearchService;
@@ -18,12 +19,14 @@ public class SearchController {
     private final YouTubeSearchService youTubeSearchService;
     private final RedditSearchService redditSearchService;
     private final InstagramSearchService instagramSearchService;
+    private final KakaoSearchService kakaoSearchService;
 
-    public SearchController(NaverSearchService naverSearchService, YouTubeSearchService youTubeSearchService, RedditSearchService redditSearchService, InstagramSearchService instagramSearchService) {
+    public SearchController(NaverSearchService naverSearchService, YouTubeSearchService youTubeSearchService, RedditSearchService redditSearchService, InstagramSearchService instagramSearchService, KakaoSearchService kakaoSearchService) {
         this.naverSearchService = naverSearchService;
         this.youTubeSearchService = youTubeSearchService;
         this.redditSearchService = redditSearchService;
         this.instagramSearchService = instagramSearchService;
+        this.kakaoSearchService = kakaoSearchService;
     }
 
     @GetMapping("/{category}")
@@ -45,6 +48,9 @@ public class SearchController {
         }
         if ("instagram".equals(category)) {
             return instagramSearchService.searchByHashtag(query, display);
+        }
+        if (category.startsWith("kakao-")) {
+            return kakaoSearchService.search(category, query, display, 1, "accuracy");
         }
         return naverSearchService.search(category, query, display, start, sort);
     }
@@ -93,6 +99,16 @@ public class SearchController {
         } catch (Exception e) {
             results.put("instagram", "{\"data\":[]}");
         }
+
+        // Kakao (Daum) results
+        Map<String, CompletableFuture<String>> kakaoFutures = kakaoSearchService.searchAll(query, display);
+        kakaoFutures.forEach((category, future) -> {
+            try {
+                results.put(category, future.get());
+            } catch (Exception e) {
+                results.put(category, "{\"documents\":[]}");
+            }
+        });
 
         return results;
     }
@@ -158,6 +174,24 @@ public class SearchController {
             }
         });
 
+        // Kakao blog trending
+        CompletableFuture<String> kakaoBlog = CompletableFuture.supplyAsync(() -> {
+            try {
+                return kakaoSearchService.search("kakao-blog", keyword, display, 1, "recency");
+            } catch (Exception e) {
+                return "{\"documents\":[]}";
+            }
+        });
+
+        // Kakao cafe trending
+        CompletableFuture<String> kakaoCafe = CompletableFuture.supplyAsync(() -> {
+            try {
+                return kakaoSearchService.search("kakao-cafe", keyword, display, 1, "recency");
+            } catch (Exception e) {
+                return "{\"documents\":[]}";
+            }
+        });
+
         // Instagram trending
         CompletableFuture<String> instaTrending = CompletableFuture.supplyAsync(() -> {
             try {
@@ -175,6 +209,8 @@ public class SearchController {
             results.put("shorts", ytShorts.get());
             results.put("reddit", redditTrending.get());
             results.put("instagram", instaTrending.get());
+            results.put("kakao-blog", kakaoBlog.get());
+            results.put("kakao-cafe", kakaoCafe.get());
             results.put("keyword", keyword);
         } catch (Exception e) {
             results.put("error", e.getMessage());

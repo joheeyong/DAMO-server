@@ -16,6 +16,8 @@ public class DeviceToken {
 
     private String platform;
 
+    private Long userId;
+
     private LocalDateTime createdAt;
 
     public DeviceToken() {}
@@ -36,5 +38,7 @@ public class DeviceToken {
     public void setToken(String token) { this.token = token; }
     public String getPlatform() { return platform; }
     public void setPlatform(String platform) { this.platform = platform; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

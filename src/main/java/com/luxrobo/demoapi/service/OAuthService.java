@@ -29,6 +29,12 @@ public class OAuthService {
     @Value("${naver.login.client-secret}")
     private String naverClientSecret;
 
+    @Value("${kakao.client-id}")
+    private String kakaoClientId;
+
+    @Value("${kakao.client-secret:}")
+    private String kakaoClientSecret;
+
     public OAuthService(UserRepository userRepository, JwtProvider jwtProvider) {
         this.userRepository = userRepository;
         this.jwtProvider = jwtProvider;
@@ -102,6 +108,45 @@ public class OAuthService {
 
         // 3. Upsert user
         User user = upsertUser("naver", providerId, name, email, picture);
+
+        return buildLoginResponse(user);
+    }
+
+    public Map<String, Object> loginWithKakao(String code, String redirectUri) {
+        // 1. Exchange code for access token
+        Map tokenResponse = webClient.post()
+                .uri("https://kauth.kakao.com/oauth/token")
+                .header("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
+                .bodyValue("grant_type=authorization_code"
+                        + "&client_id=" + kakaoClientId
+                        + "&redirect_uri=" + redirectUri
+                        + "&code=" + code
+                        + (kakaoClientSecret != null && !kakaoClientSecret.isEmpty()
+                                ? "&client_secret=" + kakaoClientSecret : ""))
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
+
+        String accessToken = (String) tokenResponse.get("access_token");
+
+        // 2. Get user info
+        Map userInfo = webClient.get()
+                .uri("https://kapi.kakao.com/v2/user/me")
+                .header("Authorization", "Bearer " + accessToken)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
+
+        String providerId = String.valueOf(userInfo.get("id"));
+        Map kakaoAccount = (Map) userInfo.get("kakao_account");
+        Map profile = kakaoAccount != null ? (Map) kakaoAccount.get("profile") : null;
+
+        String name = profile != null ? (String) profile.get("nickname") : null;
+        String email = kakaoAccount != null ? (String) kakaoAccount.get("email") : null;
+        String picture = profile != null ? (String) profile.get("profile_image_url") : null;
+
+        // 3. Upsert user
+        User user = upsertUser("kakao", providerId, name, email, picture);
 
         return buildLoginResponse(user);
     }

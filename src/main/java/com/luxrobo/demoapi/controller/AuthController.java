@@ -36,6 +36,13 @@ public class AuthController {
         return oAuthService.loginWithNaver(code, state, redirectUri);
     }
 
+    @PostMapping("/kakao")
+    public Map<String, Object> kakaoLogin(@RequestBody Map<String, String> body) {
+        String code = body.get("code");
+        String redirectUri = body.get("redirectUri");
+        return oAuthService.loginWithKakao(code, redirectUri);
+    }
+
     @GetMapping("/me")
     public Map<String, Object> me(Authentication authentication) {
         if (authentication == null || authentication.getPrincipal() == null) {

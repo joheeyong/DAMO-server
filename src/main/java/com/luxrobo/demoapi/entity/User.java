@@ -18,6 +18,9 @@ public class User {
     private String providerId;
     private String profileImage;
 
+    @Column(length = 1000)
+    private String interests;
+
     public User() {}
 
     public User(String name, String email) {
@@ -44,4 +47,6 @@ public class User {
     public void setProviderId(String providerId) { this.providerId = providerId; }
     public String getProfileImage() { return profileImage; }
     public void setProfileImage(String profileImage) { this.profileImage = profileImage; }
+    public String getInterests() { return interests; }
+    public void setInterests(String interests) { this.interests = interests; }
 }

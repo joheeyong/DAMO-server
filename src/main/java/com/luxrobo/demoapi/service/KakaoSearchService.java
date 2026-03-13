@@ -46,17 +46,18 @@ public class KakaoSearchService {
         return fetchUrl(urlStr);
     }
 
-    public Map<String, CompletableFuture<String>> searchAll(String query, int size) {
+    public Map<String, CompletableFuture<String>> searchAll(String query, int size, String sort) {
         Map<String, CompletableFuture<String>> results = new ConcurrentHashMap<>();
 
         if (restApiKey.isEmpty()) {
             return results;
         }
 
+        String kakaoSort = "date".equals(sort) ? "recency" : "accuracy";
         for (String category : CATEGORY_PATHS.keySet()) {
             results.put(category, CompletableFuture.supplyAsync(() -> {
                 try {
-                    return search(category, query, size, 1, "accuracy");
+                    return search(category, query, size, 1, kakaoSort);
                 } catch (Exception e) {
                     return "{\"documents\":[]}";
                 }

@@ -18,8 +18,9 @@ public class YouTubeSearchService {
 
     private static final String BASE_URL = "https://www.googleapis.com/youtube/v3";
 
-    public String search(String query, int maxResults) throws Exception {
+    public String search(String query, int maxResults, String sort) throws Exception {
         String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
+        String ytOrder = "date".equals(sort) ? "date" : "relevance";
         String urlStr = BASE_URL + "/search"
                 + "?part=snippet"
                 + "&q=" + encodedQuery
@@ -27,13 +28,15 @@ public class YouTubeSearchService {
                 + "&type=video"
                 + "&regionCode=KR"
                 + "&relevanceLanguage=ko"
+                + "&order=" + ytOrder
                 + "&key=" + apiKey;
 
         return fetchUrl(urlStr);
     }
 
-    public String searchShorts(String query, int maxResults) throws Exception {
+    public String searchShorts(String query, int maxResults, String sort) throws Exception {
         String encodedQuery = URLEncoder.encode(query + " #shorts", StandardCharsets.UTF_8);
+        String ytOrder = "date".equals(sort) ? "date" : "relevance";
         String urlStr = BASE_URL + "/search"
                 + "?part=snippet"
                 + "&q=" + encodedQuery
@@ -42,6 +45,7 @@ public class YouTubeSearchService {
                 + "&videoDuration=short"
                 + "&regionCode=KR"
                 + "&relevanceLanguage=ko"
+                + "&order=" + ytOrder
                 + "&key=" + apiKey;
 
         return fetchUrl(urlStr);

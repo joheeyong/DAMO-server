@@ -70,13 +70,13 @@ public class NaverSearchService {
         return sb.toString();
     }
 
-    public Map<String, CompletableFuture<String>> searchAll(String query, int display) {
+    public Map<String, CompletableFuture<String>> searchAll(String query, int display, String sort) {
         Map<String, CompletableFuture<String>> results = new ConcurrentHashMap<>();
 
         for (String category : CATEGORY_PATHS.keySet()) {
             results.put(category, CompletableFuture.supplyAsync(() -> {
                 try {
-                    return search(category, query, display, 1, "sim");
+                    return search(category, query, display, 1, sort);
                 } catch (Exception e) {
                     return "{\"error\":\"" + e.getMessage() + "\"}";
                 }

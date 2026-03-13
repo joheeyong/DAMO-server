@@ -15,13 +15,14 @@ public class RedditSearchService {
     private static final String BASE_URL = "https://www.reddit.com";
     private static final String USER_AGENT = "web:com.damo.app:v1.0.0 (by /u/damo_search)";
 
-    public String search(String query, int limit) throws Exception {
+    public String search(String query, int limit, String sort) throws Exception {
         String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
+        String redditSort = "date".equals(sort) ? "new" : "relevance";
         String urlStr = BASE_URL + "/search.json"
                 + "?q=" + encodedQuery
                 + "&limit=" + limit
-                + "&sort=relevance"
-                + "&t=week";
+                + "&sort=" + redditSort
+                + "&t=all";
 
         return fetchUrl(urlStr);
     }

@@ -38,13 +38,13 @@ public class SearchController {
             @RequestParam(defaultValue = "sim") String sort
     ) throws Exception {
         if ("youtube".equals(category)) {
-            return youTubeSearchService.search(query, display);
+            return youTubeSearchService.search(query, display, sort);
         }
         if ("shorts".equals(category)) {
-            return youTubeSearchService.searchShorts(query, display);
+            return youTubeSearchService.searchShorts(query, display, sort);
         }
         if ("reddit".equals(category)) {
-            return redditSearchService.search(query, display);
+            return redditSearchService.search(query, display, sort);
         }
         if ("instagram".equals(category)) {
             return instagramSearchService.searchByHashtag(query, display);
@@ -58,9 +58,10 @@ public class SearchController {
     @GetMapping("/all")
     public Map<String, Object> searchAll(
             @RequestParam String query,
-            @RequestParam(defaultValue = "5") int display
+            @RequestParam(defaultValue = "5") int display,
+            @RequestParam(defaultValue = "sim") String sort
     ) {
-        Map<String, CompletableFuture<String>> futures = naverSearchService.searchAll(query, display);
+        Map<String, CompletableFuture<String>> futures = naverSearchService.searchAll(query, display, sort);
         Map<String, Object> results = new HashMap<>();
 
         // Naver results
@@ -74,21 +75,21 @@ public class SearchController {
 
         // YouTube results
         try {
-            results.put("youtube", youTubeSearchService.search(query, display));
+            results.put("youtube", youTubeSearchService.search(query, display, sort));
         } catch (Exception e) {
             results.put("youtube", "{\"error\":\"" + e.getMessage() + "\"}");
         }
 
         // YouTube Shorts
         try {
-            results.put("shorts", youTubeSearchService.searchShorts(query, display));
+            results.put("shorts", youTubeSearchService.searchShorts(query, display, sort));
         } catch (Exception e) {
             results.put("shorts", "{\"error\":\"" + e.getMessage() + "\"}");
         }
 
         // Reddit results
         try {
-            results.put("reddit", redditSearchService.search(query, display));
+            results.put("reddit", redditSearchService.search(query, display, sort));
         } catch (Exception e) {
             results.put("reddit", "{\"error\":\"" + e.getMessage() + "\"}");
         }
@@ -101,7 +102,7 @@ public class SearchController {
         }
 
         // Kakao (Daum) results
-        Map<String, CompletableFuture<String>> kakaoFutures = kakaoSearchService.searchAll(query, display);
+        Map<String, CompletableFuture<String>> kakaoFutures = kakaoSearchService.searchAll(query, display, sort);
         kakaoFutures.forEach((category, future) -> {
             try {
                 results.put(category, future.get());

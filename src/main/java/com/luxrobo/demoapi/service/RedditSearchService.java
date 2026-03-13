@@ -16,15 +16,30 @@ public class RedditSearchService {
     private static final String USER_AGENT = "web:com.damo.app:v1.0.0 (by /u/damo_search)";
 
     public String search(String query, int limit, String sort) throws Exception {
+        return search(query, limit, sort, "all");
+    }
+
+    public String search(String query, int limit, String sort, String period) throws Exception {
         String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
         String redditSort = "date".equals(sort) ? "new" : "relevance";
+        String redditTime = toRedditTime(period);
         String urlStr = BASE_URL + "/search.json"
                 + "?q=" + encodedQuery
                 + "&limit=" + limit
                 + "&sort=" + redditSort
-                + "&t=all";
+                + "&t=" + redditTime;
 
         return fetchUrl(urlStr);
+    }
+
+    private String toRedditTime(String period) {
+        if (period == null) return "all";
+        switch (period) {
+            case "1d": return "day";
+            case "1w": return "week";
+            case "1m": return "month";
+            default: return "all";
+        }
     }
 
     public String trending(int limit) throws Exception {

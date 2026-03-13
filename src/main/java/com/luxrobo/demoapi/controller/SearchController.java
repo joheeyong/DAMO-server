@@ -59,7 +59,8 @@ public class SearchController {
     public Map<String, Object> searchAll(
             @RequestParam String query,
             @RequestParam(defaultValue = "5") int display,
-            @RequestParam(defaultValue = "sim") String sort
+            @RequestParam(defaultValue = "sim") String sort,
+            @RequestParam(defaultValue = "all") String period
     ) {
         Map<String, CompletableFuture<String>> futures = naverSearchService.searchAll(query, display, sort);
         Map<String, Object> results = new HashMap<>();
@@ -73,23 +74,23 @@ public class SearchController {
             }
         });
 
-        // YouTube results
+        // YouTube results (supports publishedAfter)
         try {
-            results.put("youtube", youTubeSearchService.search(query, display, sort));
+            results.put("youtube", youTubeSearchService.search(query, display, sort, period));
         } catch (Exception e) {
             results.put("youtube", "{\"error\":\"" + e.getMessage() + "\"}");
         }
 
-        // YouTube Shorts
+        // YouTube Shorts (supports publishedAfter)
         try {
-            results.put("shorts", youTubeSearchService.searchShorts(query, display, sort));
+            results.put("shorts", youTubeSearchService.searchShorts(query, display, sort, period));
         } catch (Exception e) {
             results.put("shorts", "{\"error\":\"" + e.getMessage() + "\"}");
         }
 
-        // Reddit results
+        // Reddit results (supports time filter)
         try {
-            results.put("reddit", redditSearchService.search(query, display, sort));
+            results.put("reddit", redditSearchService.search(query, display, sort, period));
         } catch (Exception e) {
             results.put("reddit", "{\"error\":\"" + e.getMessage() + "\"}");
         }
@@ -110,6 +111,9 @@ public class SearchController {
                 results.put(category, "{\"documents\":[]}");
             }
         });
+
+        // Pass period info so frontend can filter Naver/Kakao client-side
+        results.put("_period", period);
 
         return results;
     }

@@ -13,15 +13,18 @@ public class SearchOrchestrationService {
     private final YouTubeSearchService youTubeSearchService;
     private final InstagramSearchService instagramSearchService;
     private final KakaoSearchService kakaoSearchService;
+    private final BlogService blogService;
 
     public SearchOrchestrationService(NaverSearchService naverSearchService,
                                        YouTubeSearchService youTubeSearchService,
                                        InstagramSearchService instagramSearchService,
-                                       KakaoSearchService kakaoSearchService) {
+                                       KakaoSearchService kakaoSearchService,
+                                       BlogService blogService) {
         this.naverSearchService = naverSearchService;
         this.youTubeSearchService = youTubeSearchService;
         this.instagramSearchService = instagramSearchService;
         this.kakaoSearchService = kakaoSearchService;
+        this.blogService = blogService;
     }
 
     public Map<String, Object> searchAll(String query, int display, String sort, String period) {
@@ -67,6 +70,13 @@ public class SearchOrchestrationService {
                 results.put(category, "{\"documents\":[]}");
             }
         });
+
+        // DAMO blog search
+        try {
+            results.put("damo-blog", blogService.searchToFeedJson(query, display));
+        } catch (Exception e) {
+            results.put("damo-blog", "{\"items\":[]}");
+        }
 
         // Pass period info so frontend can filter Naver/Kakao client-side
         results.put("_period", period);
@@ -150,6 +160,15 @@ public class SearchOrchestrationService {
             }
         });
 
+        // DAMO blog posts
+        CompletableFuture<String> blogFeed = CompletableFuture.supplyAsync(() -> {
+            try {
+                return blogService.toFeedJson(display);
+            } catch (Exception e) {
+                return "{\"items\":[]}";
+            }
+        });
+
         try {
             results.put("youtube", ytTrending.get());
             results.put("news", naverNews.get());
@@ -159,6 +178,7 @@ public class SearchOrchestrationService {
             results.put("instagram", instaTrending.get());
             results.put("kakao-blog", kakaoBlog.get());
             results.put("kakao-cafe", kakaoCafe.get());
+            results.put("damo-blog", blogFeed.get());
             results.put("keyword", keyword);
         } catch (Exception e) {
             results.put("error", "Failed to fetch trending data");

@@ -1,8 +1,9 @@
 package com.luxrobo.demoapi.controller;
 
-import com.luxrobo.demoapi.entity.User;
-import com.luxrobo.demoapi.repository.UserRepository;
 import com.luxrobo.demoapi.service.OAuthService;
+import com.luxrobo.demoapi.service.UserService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,11 +15,11 @@ import java.util.Map;
 public class AuthController {
 
     private final OAuthService oAuthService;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
-    public AuthController(OAuthService oAuthService, UserRepository userRepository) {
+    public AuthController(OAuthService oAuthService, UserService userService) {
         this.oAuthService = oAuthService;
-        this.userRepository = userRepository;
+        this.userService = userService;
     }
 
     @PostMapping("/google")
@@ -44,38 +45,22 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public Map<String, Object> me(Authentication authentication) {
+    public ResponseEntity<?> me(Authentication authentication) {
         if (authentication == null || authentication.getPrincipal() == null) {
-            return Map.of("error", "Unauthorized", "status", 403);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
         }
         Long userId = (Long) authentication.getPrincipal();
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        String interests = user.getInterests() != null ? user.getInterests() : "";
-        return Map.of(
-                "id", user.getId(),
-                "name", user.getName() != null ? user.getName() : "",
-                "email", user.getEmail() != null ? user.getEmail() : "",
-                "profileImage", user.getProfileImage() != null ? user.getProfileImage() : "",
-                "provider", user.getProvider() != null ? user.getProvider() : "",
-                "interests", interests
-        );
+        return ResponseEntity.ok(userService.getProfile(userId));
     }
 
+    @SuppressWarnings("unchecked")
     @PutMapping("/interests")
-    public Map<String, Object> updateInterests(@RequestBody Map<String, Object> body, Authentication authentication) {
+    public ResponseEntity<?> updateInterests(@RequestBody Map<String, Object> body, Authentication authentication) {
         if (authentication == null || authentication.getPrincipal() == null) {
-            return Map.of("error", "Unauthorized", "status", 403);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
         }
         Long userId = (Long) authentication.getPrincipal();
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
         List<String> interests = (List<String>) body.get("interests");
-        user.setInterests(String.join(",", interests));
-        userRepository.save(user);
-
-        return Map.of("interests", user.getInterests());
+        return ResponseEntity.ok(userService.updateInterests(userId, interests));
     }
 }

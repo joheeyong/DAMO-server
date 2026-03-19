@@ -1,10 +1,6 @@
 package com.luxrobo.demoapi.controller;
 
-import com.luxrobo.demoapi.entity.UserClickHistory;
-import com.luxrobo.demoapi.entity.UserSearchHistory;
-import com.luxrobo.demoapi.repository.UserClickHistoryRepository;
-import com.luxrobo.demoapi.repository.UserSearchHistoryRepository;
-import com.luxrobo.demoapi.service.RecommendationService;
+import com.luxrobo.demoapi.service.ActivityService;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,16 +11,10 @@ import java.util.Map;
 @RequestMapping("/api/activity")
 public class ActivityController {
 
-    private final UserSearchHistoryRepository searchHistoryRepository;
-    private final UserClickHistoryRepository clickHistoryRepository;
-    private final RecommendationService recommendationService;
+    private final ActivityService activityService;
 
-    public ActivityController(UserSearchHistoryRepository searchHistoryRepository,
-                               UserClickHistoryRepository clickHistoryRepository,
-                               RecommendationService recommendationService) {
-        this.searchHistoryRepository = searchHistoryRepository;
-        this.clickHistoryRepository = clickHistoryRepository;
-        this.recommendationService = recommendationService;
+    public ActivityController(ActivityService activityService) {
+        this.activityService = activityService;
     }
 
     @PostMapping("/search")
@@ -33,17 +23,7 @@ public class ActivityController {
             return Map.of("status", "skipped");
         }
         Long userId = (Long) authentication.getPrincipal();
-        String query = body.get("query");
-        if (query == null || query.trim().isEmpty()) {
-            return Map.of("status", "skipped");
-        }
-
-        UserSearchHistory history = new UserSearchHistory();
-        history.setUserId(userId);
-        history.setQuery(query.trim());
-        searchHistoryRepository.save(history);
-
-        return Map.of("status", "ok");
+        return activityService.recordSearch(userId, body.get("query"));
     }
 
     @PostMapping("/click")
@@ -52,20 +32,7 @@ public class ActivityController {
             return Map.of("status", "skipped");
         }
         Long userId = (Long) authentication.getPrincipal();
-        String contentId = body.get("contentId");
-        String platform = body.get("platform");
-        if (contentId == null || platform == null) {
-            return Map.of("status", "skipped");
-        }
-
-        UserClickHistory history = new UserClickHistory();
-        history.setUserId(userId);
-        history.setContentId(contentId);
-        history.setPlatform(platform);
-        history.setSourceKeyword(body.getOrDefault("sourceKeyword", ""));
-        clickHistoryRepository.save(history);
-
-        return Map.of("status", "ok");
+        return activityService.recordClick(userId, body.get("contentId"), body.get("platform"), body.getOrDefault("sourceKeyword", ""));
     }
 
     @SuppressWarnings("unchecked")
@@ -76,11 +43,6 @@ public class ActivityController {
         }
         Long userId = (Long) authentication.getPrincipal();
         List<Map<String, String>> items = (List<Map<String, String>>) body.get("items");
-        if (items == null || items.isEmpty()) {
-            return Map.of("rankedIds", List.of());
-        }
-
-        List<String> rankedIds = recommendationService.rankItems(userId, items);
-        return Map.of("rankedIds", rankedIds);
+        return activityService.rankItems(userId, items);
     }
 }

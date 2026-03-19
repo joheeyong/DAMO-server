@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -35,13 +36,29 @@ public class OAuthService {
     @Value("${kakao.client-secret:}")
     private String kakaoClientSecret;
 
+    private static final List<String> ALLOWED_REDIRECT_URIS = List.of(
+            "https://damo-web.vercel.app/oauth/callback",
+            "https://damo-web.vercel.app/oauth/naver/callback",
+            "https://damo-web.vercel.app/oauth/kakao/callback",
+            "http://localhost:3000/oauth/callback",
+            "http://localhost:3000/oauth/naver/callback",
+            "http://localhost:3000/oauth/kakao/callback"
+    );
+
     public OAuthService(UserRepository userRepository, JwtProvider jwtProvider) {
         this.userRepository = userRepository;
         this.jwtProvider = jwtProvider;
         this.webClient = WebClient.create();
     }
 
+    private void validateRedirectUri(String redirectUri) {
+        if (redirectUri == null || !ALLOWED_REDIRECT_URIS.contains(redirectUri)) {
+            throw new IllegalArgumentException("Invalid redirect URI");
+        }
+    }
+
     public Map<String, Object> loginWithGoogle(String code, String redirectUri) {
+        validateRedirectUri(redirectUri);
         // 1. Exchange code for access token
         Map tokenResponse = webClient.post()
                 .uri("https://oauth2.googleapis.com/token")
@@ -78,6 +95,7 @@ public class OAuthService {
     }
 
     public Map<String, Object> loginWithNaver(String code, String state, String redirectUri) {
+        validateRedirectUri(redirectUri);
         // 1. Exchange code for access token
         Map tokenResponse = webClient.post()
                 .uri("https://nid.naver.com/oauth2.0/token"
@@ -113,6 +131,7 @@ public class OAuthService {
     }
 
     public Map<String, Object> loginWithKakao(String code, String redirectUri) {
+        validateRedirectUri(redirectUri);
         // 1. Exchange code for access token
         Map tokenResponse = webClient.post()
                 .uri("https://kauth.kakao.com/oauth/token")

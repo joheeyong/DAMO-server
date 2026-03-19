@@ -31,10 +31,12 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/health", "/api/auth/**", "/api/search/**",
-                                "/api/fcm/**", "/api/users/**").permitAll()
+                        .requestMatchers("/", "/health", "/api/auth/**", "/api/search/**").permitAll()
+                        .requestMatchers("/api/fcm/register").permitAll()
+                        .requestMatchers("/api/fcm/tokens", "/api/fcm/send").authenticated()
+                        .requestMatchers("/api/users/**").authenticated()
                         .requestMatchers("/api/me/**", "/api/activity/**", "/api/bookmarks/**").authenticated()
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

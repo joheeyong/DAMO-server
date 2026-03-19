@@ -4,13 +4,18 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 
 @Component
 public class FirebaseConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(FirebaseConfig.class);
 
     @PostConstruct
     public void init() {
@@ -20,7 +25,9 @@ public class FirebaseConfig {
                 GoogleCredentials credentials;
 
                 if (credPath != null && !credPath.isEmpty()) {
-                    credentials = GoogleCredentials.fromStream(new FileInputStream(credPath));
+                    // 경로 정규화하여 path traversal 방지
+                    Path normalizedPath = Path.of(credPath).normalize().toAbsolutePath();
+                    credentials = GoogleCredentials.fromStream(new FileInputStream(normalizedPath.toFile()));
                 } else {
                     credentials = GoogleCredentials.getApplicationDefault();
                 }
@@ -30,10 +37,10 @@ public class FirebaseConfig {
                         .build();
 
                 FirebaseApp.initializeApp(options);
-                System.out.println("Firebase initialized successfully");
+                log.info("Firebase initialized successfully");
             }
         } catch (IOException e) {
-            System.err.println("Firebase initialization failed: " + e.getMessage());
+            log.error("Firebase initialization failed");
         }
     }
 }

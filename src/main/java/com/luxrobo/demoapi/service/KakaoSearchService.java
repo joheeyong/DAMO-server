@@ -3,10 +3,6 @@ package com.luxrobo.demoapi.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -19,6 +15,8 @@ public class KakaoSearchService {
     @Value("${kakao.rest-api-key:}")
     private String restApiKey;
 
+    private final HttpClientService httpClientService;
+
     private static final String BASE_URL = "https://dapi.kakao.com/v2/search";
 
     private static final Map<String, String> CATEGORY_PATHS = Map.of(
@@ -28,6 +26,10 @@ public class KakaoSearchService {
             "kakao-video", "/vclip",
             "kakao-image", "/image"
     );
+
+    public KakaoSearchService(HttpClientService httpClientService) {
+        this.httpClientService = httpClientService;
+    }
 
     public String search(String category, String query, int size, int page, String sort) throws Exception {
         if (restApiKey.isEmpty()) {
@@ -43,7 +45,7 @@ public class KakaoSearchService {
                 + "&page=" + page
                 + "&sort=" + sort;
 
-        return fetchUrl(urlStr);
+        return httpClientService.get(urlStr, Map.of("Authorization", "KakaoAK " + restApiKey));
     }
 
     public Map<String, CompletableFuture<String>> searchAll(String query, int size, String sort) {
@@ -65,30 +67,5 @@ public class KakaoSearchService {
         }
 
         return results;
-    }
-
-    private String fetchUrl(String urlStr) throws Exception {
-        URL url = new URL(urlStr);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setRequestProperty("Authorization", "KakaoAK " + restApiKey);
-
-        int responseCode = conn.getResponseCode();
-        BufferedReader br;
-        if (responseCode == 200) {
-            br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
-        } else {
-            br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
-        }
-
-        StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = br.readLine()) != null) {
-            sb.append(line);
-        }
-        br.close();
-        conn.disconnect();
-
-        return sb.toString();
     }
 }

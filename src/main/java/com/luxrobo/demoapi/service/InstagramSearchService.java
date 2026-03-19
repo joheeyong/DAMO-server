@@ -3,12 +3,9 @@ package com.luxrobo.demoapi.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 @Service
 public class InstagramSearchService {
@@ -19,7 +16,13 @@ public class InstagramSearchService {
     @Value("${instagram.user-id:}")
     private String userId;
 
+    private final HttpClientService httpClientService;
+
     private static final String GRAPH_URL = "https://graph.facebook.com/v19.0";
+
+    public InstagramSearchService(HttpClientService httpClientService) {
+        this.httpClientService = httpClientService;
+    }
 
     /**
      * Search hashtag and get recent media
@@ -44,7 +47,7 @@ public class InstagramSearchService {
                 + "&limit=" + limit
                 + "&access_token=" + accessToken;
 
-        return fetchUrl(urlStr);
+        return httpClientService.get(urlStr, Map.of());
     }
 
     private String getHashtagId(String hashtag) throws Exception {
@@ -54,7 +57,7 @@ public class InstagramSearchService {
                 + "&user_id=" + userId
                 + "&access_token=" + accessToken;
 
-        String response = fetchUrl(urlStr);
+        String response = httpClientService.get(urlStr, Map.of());
         // Extract first hashtag ID from response
         // Response format: {"data":[{"id":"17843853986012965"}]}
         int idStart = response.indexOf("\"id\":\"");
@@ -62,29 +65,5 @@ public class InstagramSearchService {
         idStart += 6;
         int idEnd = response.indexOf("\"", idStart);
         return response.substring(idStart, idEnd);
-    }
-
-    private String fetchUrl(String urlStr) throws Exception {
-        URL url = new URL(urlStr);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-
-        int responseCode = conn.getResponseCode();
-        BufferedReader br;
-        if (responseCode == 200) {
-            br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
-        } else {
-            br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
-        }
-
-        StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = br.readLine()) != null) {
-            sb.append(line);
-        }
-        br.close();
-        conn.disconnect();
-
-        return sb.toString();
     }
 }

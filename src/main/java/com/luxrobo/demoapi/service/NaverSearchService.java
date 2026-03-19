@@ -3,10 +3,6 @@ package com.luxrobo.demoapi.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -22,6 +18,8 @@ public class NaverSearchService {
     @Value("${naver.search.client-secret}")
     private String clientSecret;
 
+    private final HttpClientService httpClientService;
+
     private static final String BASE_URL = "https://openapi.naver.com/v1/search";
 
     private static final Map<String, String> CATEGORY_PATHS = Map.of(
@@ -35,6 +33,10 @@ public class NaverSearchService {
             "webkr", "/webkr.json"
     );
 
+    public NaverSearchService(HttpClientService httpClientService) {
+        this.httpClientService = httpClientService;
+    }
+
     public String search(String category, String query, int display, int start, String sort) throws Exception {
         String path = CATEGORY_PATHS.getOrDefault(category, "/blog.json");
         String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
@@ -45,29 +47,10 @@ public class NaverSearchService {
                 + "&start=" + start
                 + "&sort=" + sort;
 
-        URL url = new URL(urlStr);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setRequestProperty("X-Naver-Client-Id", clientId);
-        conn.setRequestProperty("X-Naver-Client-Secret", clientSecret);
-
-        int responseCode = conn.getResponseCode();
-        BufferedReader br;
-        if (responseCode == 200) {
-            br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
-        } else {
-            br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
-        }
-
-        StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = br.readLine()) != null) {
-            sb.append(line);
-        }
-        br.close();
-        conn.disconnect();
-
-        return sb.toString();
+        return httpClientService.get(urlStr, Map.of(
+                "X-Naver-Client-Id", clientId,
+                "X-Naver-Client-Secret", clientSecret
+        ));
     }
 
     public Map<String, CompletableFuture<String>> searchAll(String query, int display, String sort) {
@@ -78,7 +61,7 @@ public class NaverSearchService {
                 try {
                     return search(category, query, display, 1, sort);
                 } catch (Exception e) {
-                    return "{\"error\":\"" + e.getMessage() + "\"}";
+                    return "{\"error\":\"Search request failed\"}";
                 }
             }));
         }

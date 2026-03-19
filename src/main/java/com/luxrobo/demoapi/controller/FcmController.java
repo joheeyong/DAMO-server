@@ -3,6 +3,8 @@ package com.luxrobo.demoapi.controller;
 import com.luxrobo.demoapi.entity.DeviceToken;
 import com.luxrobo.demoapi.repository.DeviceTokenRepository;
 import com.luxrobo.demoapi.service.FcmService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,7 +39,6 @@ public class FcmController {
 
         var existing = deviceTokenRepository.findByToken(token);
         if (existing.isPresent()) {
-            // Update userId if user is now logged in
             DeviceToken dt = existing.get();
             if (userId != null && !userId.equals(dt.getUserId())) {
                 dt.setUserId(userId);
@@ -53,12 +54,19 @@ public class FcmController {
     }
 
     @GetMapping("/tokens")
-    public List<DeviceToken> getTokens() {
-        return deviceTokenRepository.findAll();
+    public ResponseEntity<?> getTokens(Authentication authentication) {
+        if (authentication == null || authentication.getPrincipal() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
+        }
+        return ResponseEntity.ok(deviceTokenRepository.findAll());
     }
 
     @PostMapping("/send")
-    public Map<String, String> sendNotification(@RequestBody Map<String, String> request) {
+    public ResponseEntity<?> sendNotification(@RequestBody Map<String, String> request, Authentication authentication) {
+        if (authentication == null || authentication.getPrincipal() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
+        }
+
         String title = request.getOrDefault("title", "DAMO");
         String body = request.getOrDefault("body", "");
         String targetToken = request.get("token");
@@ -67,26 +75,24 @@ public class FcmController {
         try {
             String result;
             if (targetToken != null && !targetToken.isEmpty()) {
-                // Send to specific token
                 result = fcmService.sendToToken(targetToken, title, body);
             } else if (targetUserId != null && !targetUserId.isEmpty()) {
-                // Send to specific user's all devices
                 Long uid = Long.parseLong(targetUserId);
                 List<String> userTokens = deviceTokenRepository.findByUserId(uid)
                         .stream().map(DeviceToken::getToken).toList();
                 if (userTokens.isEmpty()) {
-                    return Map.of("status", "OK", "result", "No devices for user");
+                    return ResponseEntity.ok(Map.of("status", "OK", "result", "No devices for user"));
                 }
                 result = fcmService.sendToAll(userTokens, title, body);
             } else {
-                // Send to all devices
                 List<String> allTokens = deviceTokenRepository.findAll()
                         .stream().map(DeviceToken::getToken).toList();
                 result = fcmService.sendToAll(allTokens, title, body);
             }
-            return Map.of("status", "OK", "result", result);
+            return ResponseEntity.ok(Map.of("status", "OK", "result", result));
         } catch (Exception e) {
-            return Map.of("status", "ERROR", "message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "ERROR", "message", "Failed to send notification"));
         }
     }
 }

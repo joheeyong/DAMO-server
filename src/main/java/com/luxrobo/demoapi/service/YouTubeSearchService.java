@@ -3,12 +3,9 @@ package com.luxrobo.demoapi.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 @Service
 public class YouTubeSearchService {
@@ -16,7 +13,13 @@ public class YouTubeSearchService {
     @Value("${youtube.api-key}")
     private String apiKey;
 
+    private final HttpClientService httpClientService;
+
     private static final String BASE_URL = "https://www.googleapis.com/youtube/v3";
+
+    public YouTubeSearchService(HttpClientService httpClientService) {
+        this.httpClientService = httpClientService;
+    }
 
     public String search(String query, int maxResults, String sort) throws Exception {
         return search(query, maxResults, sort, "all");
@@ -36,7 +39,7 @@ public class YouTubeSearchService {
                 + publishedAfterParam(period)
                 + "&key=" + apiKey;
 
-        return fetchUrl(urlStr);
+        return httpClientService.get(urlStr, Map.of());
     }
 
     public String searchShorts(String query, int maxResults, String sort) throws Exception {
@@ -58,7 +61,7 @@ public class YouTubeSearchService {
                 + publishedAfterParam(period)
                 + "&key=" + apiKey;
 
-        return fetchUrl(urlStr);
+        return httpClientService.get(urlStr, Map.of());
     }
 
     private String publishedAfterParam(String period) {
@@ -87,41 +90,23 @@ public class YouTubeSearchService {
                 + "&publishedAfter=" + java.time.Instant.now().minus(java.time.Duration.ofDays(7)).toString()
                 + "&key=" + apiKey;
 
-        return fetchUrl(urlStr);
+        return httpClientService.get(urlStr, Map.of());
     }
 
     public String trending(int maxResults) throws Exception {
+        return trending(maxResults, null);
+    }
+
+    public String trending(int maxResults, String videoCategoryId) throws Exception {
         String urlStr = BASE_URL + "/videos"
                 + "?part=snippet,statistics"
                 + "&chart=mostPopular"
                 + "&regionCode=KR"
                 + "&maxResults=" + maxResults
+                + (videoCategoryId != null && !videoCategoryId.isEmpty()
+                        ? "&videoCategoryId=" + videoCategoryId : "")
                 + "&key=" + apiKey;
 
-        return fetchUrl(urlStr);
-    }
-
-    private String fetchUrl(String urlStr) throws Exception {
-        URL url = new URL(urlStr);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-
-        int responseCode = conn.getResponseCode();
-        BufferedReader br;
-        if (responseCode == 200) {
-            br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
-        } else {
-            br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
-        }
-
-        StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = br.readLine()) != null) {
-            sb.append(line);
-        }
-        br.close();
-        conn.disconnect();
-
-        return sb.toString();
+        return httpClientService.get(urlStr, Map.of());
     }
 }

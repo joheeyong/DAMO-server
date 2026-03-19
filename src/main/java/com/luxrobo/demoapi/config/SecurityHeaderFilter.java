@@ -24,8 +24,17 @@ public class SecurityHeaderFilter implements Filter {
         // 클릭재킹 방어
         response.setHeader("X-Frame-Options", "DENY");
 
-        // MIME 스니핑 방지
-        response.setHeader("Content-Type", "application/json");
+        // HTTPS 강제
+        response.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+
+        // CSP
+        response.setHeader("Content-Security-Policy", "default-src 'self'");
+
+        // Referrer 정보 누출 방지
+        response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+
+        // 브라우저 기능 제한
+        response.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 
         chain.doFilter(request, servletResponse);
     }

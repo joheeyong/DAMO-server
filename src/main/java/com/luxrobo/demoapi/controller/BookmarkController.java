@@ -1,139 +1,66 @@
 package com.luxrobo.demoapi.controller;
 
-import com.luxrobo.demoapi.entity.Bookmark;
-import com.luxrobo.demoapi.repository.BookmarkRepository;
+import com.luxrobo.demoapi.service.BookmarkService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/bookmarks")
 public class BookmarkController {
 
-    private final BookmarkRepository bookmarkRepository;
+    private final BookmarkService bookmarkService;
 
-    public BookmarkController(BookmarkRepository bookmarkRepository) {
-        this.bookmarkRepository = bookmarkRepository;
+    public BookmarkController(BookmarkService bookmarkService) {
+        this.bookmarkService = bookmarkService;
     }
 
     @GetMapping
-    public List<Map<String, Object>> list(Authentication authentication) {
+    public ResponseEntity<?> list(Authentication authentication) {
         if (authentication == null || authentication.getPrincipal() == null) {
-            return List.of();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
         }
         Long userId = (Long) authentication.getPrincipal();
-        List<Bookmark> bookmarks = bookmarkRepository.findByUserIdOrderByCreatedAtDesc(userId);
-        return bookmarks.stream().map(this::toMap).toList();
+        return ResponseEntity.ok(bookmarkService.list(userId));
     }
 
     @PostMapping
-    public Map<String, Object> add(@RequestBody Map<String, Object> body, Authentication authentication) {
+    public ResponseEntity<?> add(@RequestBody Map<String, Object> body, Authentication authentication) {
         if (authentication == null || authentication.getPrincipal() == null) {
-            return Map.of("status", "unauthorized");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
         }
         Long userId = (Long) authentication.getPrincipal();
-        String contentId = (String) body.get("contentId");
-
-        if (bookmarkRepository.existsByUserIdAndContentId(userId, contentId)) {
-            return Map.of("status", "already_exists");
-        }
-
-        Bookmark bookmark = new Bookmark();
-        bookmark.setUserId(userId);
-        bookmark.setContentId(contentId);
-        bookmark.setPlatform((String) body.getOrDefault("platform", ""));
-        bookmark.setTitle((String) body.getOrDefault("title", ""));
-        bookmark.setDescription((String) body.getOrDefault("description", ""));
-        bookmark.setLink((String) body.getOrDefault("link", ""));
-        bookmark.setImage((String) body.getOrDefault("image", ""));
-        bookmark.setAuthor((String) body.getOrDefault("author", ""));
-        bookmark.setDate((String) body.getOrDefault("date", ""));
-
-        Object extra = body.get("extra");
-        if (extra != null) {
-            try {
-                bookmark.setExtraJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(extra));
-            } catch (Exception e) {
-                bookmark.setExtraJson(null);
-            }
-        }
-
-        bookmarkRepository.save(bookmark);
-        return Map.of("status", "added");
+        return ResponseEntity.ok(bookmarkService.add(userId, body));
     }
 
     @DeleteMapping("/{contentId}")
-    @Transactional
-    public Map<String, Object> remove(@PathVariable String contentId, Authentication authentication) {
+    public ResponseEntity<?> remove(@PathVariable String contentId, Authentication authentication) {
         if (authentication == null || authentication.getPrincipal() == null) {
-            return Map.of("status", "unauthorized");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
         }
         Long userId = (Long) authentication.getPrincipal();
-        bookmarkRepository.deleteByUserIdAndContentId(userId, contentId);
-        return Map.of("status", "removed");
+        return ResponseEntity.ok(bookmarkService.remove(userId, contentId));
     }
 
     @PostMapping("/sync")
-    @Transactional
-    public Map<String, Object> sync(@RequestBody List<Map<String, Object>> items, Authentication authentication) {
+    public ResponseEntity<?> sync(@RequestBody List<Map<String, Object>> items, Authentication authentication) {
         if (authentication == null || authentication.getPrincipal() == null) {
-            return Map.of("status", "unauthorized");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
         }
         Long userId = (Long) authentication.getPrincipal();
-
-        // Merge: add items from localStorage that don't exist on server
-        for (Map<String, Object> body : items) {
-            String contentId = (String) body.get("id");
-            if (contentId == null || bookmarkRepository.existsByUserIdAndContentId(userId, contentId)) continue;
-
-            Bookmark bookmark = new Bookmark();
-            bookmark.setUserId(userId);
-            bookmark.setContentId(contentId);
-            bookmark.setPlatform((String) body.getOrDefault("platform", ""));
-            bookmark.setTitle((String) body.getOrDefault("title", ""));
-            bookmark.setDescription((String) body.getOrDefault("description", ""));
-            bookmark.setLink((String) body.getOrDefault("link", ""));
-            bookmark.setImage((String) body.getOrDefault("image", ""));
-            bookmark.setAuthor((String) body.getOrDefault("author", ""));
-            bookmark.setDate((String) body.getOrDefault("date", ""));
-
-            Object extra = body.get("extra");
-            if (extra != null) {
-                try {
-                    bookmark.setExtraJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(extra));
-                } catch (Exception e) {
-                    bookmark.setExtraJson(null);
-                }
-            }
-
-            bookmarkRepository.save(bookmark);
-        }
-
-        // Return full server list
-        List<Bookmark> all = bookmarkRepository.findByUserIdOrderByCreatedAtDesc(userId);
-        return Map.of("status", "synced", "bookmarks", all.stream().map(this::toMap).toList());
+        return ResponseEntity.ok(bookmarkService.sync(userId, items));
     }
 
-    private Map<String, Object> toMap(Bookmark b) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", b.getContentId());
-        m.put("platform", b.getPlatform());
-        m.put("title", b.getTitle());
-        m.put("description", b.getDescription());
-        m.put("link", b.getLink());
-        m.put("image", b.getImage());
-        m.put("author", b.getAuthor());
-        m.put("date", b.getDate());
-        m.put("savedAt", b.getCreatedAt() != null ? b.getCreatedAt().toString() : null);
-        if (b.getExtraJson() != null) {
-            try {
-                m.put("extra", new com.fasterxml.jackson.databind.ObjectMapper().readValue(b.getExtraJson(), Map.class));
-            } catch (Exception e) {
-                m.put("extra", null);
-            }
+    @DeleteMapping
+    public ResponseEntity<?> clearAll(Authentication authentication) {
+        if (authentication == null || authentication.getPrincipal() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
         }
-        return m;
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(bookmarkService.clearAll(userId));
     }
 }

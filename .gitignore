@@ -38,3 +38,10 @@ out/
 
 ### Mac ###
 .DS_Store
+
+### Secrets ###
+.env
+.env.*
+*.pem
+*.key
+firebase-*.json

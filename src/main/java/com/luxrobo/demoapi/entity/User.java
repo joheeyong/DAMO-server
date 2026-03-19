@@ -1,5 +1,6 @@
 package com.luxrobo.demoapi.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -14,7 +15,9 @@ public class User {
 
     private String name;
     private String email;
+    @JsonIgnore
     private String provider;
+    @JsonIgnore
     private String providerId;
     private String profileImage;
 

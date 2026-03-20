@@ -37,12 +37,12 @@ public class OAuthService {
     private String kakaoClientSecret;
 
     private static final List<String> ALLOWED_REDIRECT_URIS = List.of(
-            "https://damo-web.vercel.app/oauth/callback",
-            "https://damo-web.vercel.app/oauth/naver/callback",
-            "https://damo-web.vercel.app/oauth/kakao/callback",
-            "http://localhost:3000/oauth/callback",
-            "http://localhost:3000/oauth/naver/callback",
-            "http://localhost:3000/oauth/kakao/callback"
+            "https://damo-web.vercel.app/auth/google/callback",
+            "https://damo-web.vercel.app/auth/naver/callback",
+            "https://damo-web.vercel.app/auth/kakao/callback",
+            "http://localhost:3000/auth/google/callback",
+            "http://localhost:3000/auth/naver/callback",
+            "http://localhost:3000/auth/kakao/callback"
     );
 
     public OAuthService(UserRepository userRepository, JwtProvider jwtProvider) {

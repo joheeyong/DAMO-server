@@ -60,4 +60,8 @@ public class ActivityService {
         List<String> rankedIds = recommendationService.rankItems(userId, items);
         return Map.of("rankedIds", rankedIds);
     }
+
+    public Map<String, Object> getRecommendations(Long userId) {
+        return recommendationService.getRecommendations(userId);
+    }
 }

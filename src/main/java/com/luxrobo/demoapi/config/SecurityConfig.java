@@ -35,6 +35,8 @@ public class SecurityConfig {
                         .requestMatchers("/", "/health", "/api/auth/**", "/api/search/**").permitAll()
                         .requestMatchers("/api/blog/feed", "/api/blog/search").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/blog/posts/**").permitAll()
+                        .requestMatchers("/api/social/feed").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/social/posts/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/api/fcm/register").permitAll()
                         .requestMatchers("/api/fcm/tokens", "/api/fcm/send").authenticated()

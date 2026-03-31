@@ -35,6 +35,15 @@ public class ActivityController {
         return activityService.recordClick(userId, body.get("contentId"), body.get("platform"), body.getOrDefault("sourceKeyword", ""));
     }
 
+    @GetMapping("/recommendations")
+    public Map<String, Object> getRecommendations(Authentication authentication) {
+        if (authentication == null || authentication.getPrincipal() == null) {
+            return Map.of("items", List.of(), "keywords", List.of());
+        }
+        Long userId = (Long) authentication.getPrincipal();
+        return activityService.getRecommendations(userId);
+    }
+
     @SuppressWarnings("unchecked")
     @PostMapping("/rank")
     public Map<String, Object> rankItems(@RequestBody Map<String, Object> body, Authentication authentication) {

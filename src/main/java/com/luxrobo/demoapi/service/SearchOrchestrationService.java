@@ -14,17 +14,20 @@ public class SearchOrchestrationService {
     private final InstagramSearchService instagramSearchService;
     private final KakaoSearchService kakaoSearchService;
     private final BlogService blogService;
+    private final SocialFeedService socialFeedService;
 
     public SearchOrchestrationService(NaverSearchService naverSearchService,
                                        YouTubeSearchService youTubeSearchService,
                                        InstagramSearchService instagramSearchService,
                                        KakaoSearchService kakaoSearchService,
-                                       BlogService blogService) {
+                                       BlogService blogService,
+                                       SocialFeedService socialFeedService) {
         this.naverSearchService = naverSearchService;
         this.youTubeSearchService = youTubeSearchService;
         this.instagramSearchService = instagramSearchService;
         this.kakaoSearchService = kakaoSearchService;
         this.blogService = blogService;
+        this.socialFeedService = socialFeedService;
     }
 
     public Map<String, Object> searchAll(String query, int display, String sort, String period) {
@@ -76,6 +79,13 @@ public class SearchOrchestrationService {
             results.put("damo-blog", blogService.searchToFeedJson(query, display));
         } catch (Exception e) {
             results.put("damo-blog", "{\"items\":[]}");
+        }
+
+        // DAMO social feed search
+        try {
+            results.put("damo-feed", socialFeedService.searchToFeedJson(query, display));
+        } catch (Exception e) {
+            results.put("damo-feed", "{\"items\":[]}");
         }
 
         // Pass period info so frontend can filter Naver/Kakao client-side
@@ -169,6 +179,15 @@ public class SearchOrchestrationService {
             }
         });
 
+        // DAMO social feed posts
+        CompletableFuture<String> socialFeed = CompletableFuture.supplyAsync(() -> {
+            try {
+                return socialFeedService.toFeedJson(display);
+            } catch (Exception e) {
+                return "{\"items\":[]}";
+            }
+        });
+
         try {
             results.put("youtube", ytTrending.get());
             results.put("news", naverNews.get());
@@ -179,6 +198,7 @@ public class SearchOrchestrationService {
             results.put("kakao-blog", kakaoBlog.get());
             results.put("kakao-cafe", kakaoCafe.get());
             results.put("damo-blog", blogFeed.get());
+            results.put("damo-feed", socialFeed.get());
             results.put("keyword", keyword);
         } catch (Exception e) {
             results.put("error", "Failed to fetch trending data");
